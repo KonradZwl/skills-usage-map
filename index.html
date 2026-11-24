@@ -611,6 +611,18 @@
         transition: none
       }
     }
+    #cards .card { padding: 24px 26px }
+    #cards .what { margin: 0 0 16px }
+    #cards .card ul { margin: 0 0 18px; padding-left: 18px }
+    #cards .card li { margin: 0 0 10px; padding-left: 4px; line-height: 1.5 }
+    #cards .card li::marker { color: var(--route) }
+    #cards .card li ul { margin: 8px 0 0; padding-left: 16px }
+    #cards .card li li { margin: 0 0 6px; color: var(--muted) }
+    #cards .card li li::marker { content: "– " }
+    #cards .say { margin-bottom: 16px }
+    .meta { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px }
+    .meta .done { margin: 0; display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 8px }
+    @media(max-width:600px) { .meta .done { grid-template-columns: minmax(0, 1fr); gap: 0 } #cards .card { padding: 20px 18px } }
   </style>
 </head>
 
@@ -810,8 +822,8 @@
             </tr>
             <tr>
               <td><code>/pr</code></td>
-              <td>Writing a PR body, including its one-way or two-way door</td>
-              <td>The agent</td>
+              <td>Opening a PR: writes the description and its one-way or two-way door label</td>
+              <td>The agent (type it if the label is missing)</td>
             </tr>
             <tr>
               <td><code>/retro</code></td>
@@ -863,75 +875,75 @@
       const cards = [
         {
           id: 'size', c: 'var(--ink)', n: 'Size the change', cmd: '', skill: 'Start here, every time',
-          what: 'Three questions pick your route. Each has **a sign you can check**.',
-          pts: ['Is it **obvious, a few files and low-risk** (no auth, payments, data migrations or infra)? Use /implement straight away.', 'Can the plan be **settled in one chat**? Yes: /grill-with-docs. No (a greenfield project, a huge foggy feature): /wayfinder.', 'After grilling: is the build **one slice** (one small PR, /context still shows room)? Yes: /implement in that chat. No: /to-spec, /to-tickets, then /implement-spec.', 'Unsure about the second question? **Start with /grill-with-docs** and bail out to /wayfinder if it grows.'],
+          what: 'Three questions pick your lane. Each has **a sign you can check**.',
+          pts: ['Obvious, a few files, **low-risk**? /implement.', 'Plan **fits in one chat**? /grill-with-docs. Otherwise /wayfinder.', 'After grilling, **one slice**? /implement in that chat. Otherwise the spec route.', 'Unsure? **Start grilling** and bail out if it grows.'],
           say: 'Here is the problem I have and why it hurts. I don\'t know yet how to build it.',
-          who: 'You. It is a judgement call, not a skill.',
+          who: 'You. It\'s a judgement call, not a skill.',
           done: 'You know which lane you are in.'
         },
         {
-          id: 'implement', c: 'var(--brown)', n: 'Implement', cmd: '/implement', skill: 'Small lane, and one-slice builds after grilling',
-          what: 'Builds **one piece of work** in the current chat: test-first with /tdd, then a /code-review of its own diff.',
-          pts: ['Small lane: run it in a **fresh chat** with the issue number, or the ticket file path if you use local issues.', 'After grilling, if the build is one slice: run it in the **same chat**, so it builds on everything you just agreed.', 'You can also work a spec\'s tickets by hand: /implement **per ticket**, with /clear between tickets.', 'Then you **read the PR yourself**. Small diffs are quick to review.'],
+          id: 'implement', c: 'var(--brown)', n: 'Implement', cmd: '/implement', skill: 'Small lane, and one-slice builds',
+          what: 'Builds **one piece of work** in the current chat: test-first, then a code review of its own diff.',
+          pts: ['Small lane: a **fresh chat**, with the issue number or ticket file.', 'After grilling, if it\'s one slice: the **same chat**.', 'Spec tickets by hand: one /implement **per ticket**, /clear in between.', 'Then **read the PR yourself**.'],
           say: '/implement .scratch/my-feature/issues/01-add-table.md',
           who: 'You. It calls /tdd and /code-review itself.',
           done: 'Code review is clean and you have read the PR.'
         },
         {
           id: 'grill', c: 'var(--route)', n: 'Grill with docs', cmd: '/grill-with-docs', skill: 'Medium lane',
-          what: 'An interview in rounds until you and the agent **share a language**. The terms you settle become **tables, modules and the data model**.',
-          pts: ['Explain **the why** (the problem, the friction), not the what. It leaves room for better solutions.', 'Each round is a numbered list of questions, each with a recommended answer. Answer per number; **"yes" accepts the recommendation**.', 'Settled terms go into **GLOSSARY.md** straight away. Watch for clashes, such as "component" vs React components.', 'An ADR (in docs/adr/) is only for a decision that is hard to reverse, surprising without context and a real trade-off: **all three**. Read existing ADRs before changing mature code (Chesterton\'s fence).', 'Stuck on a name? Ask for a **scenario test**: real sentences scored against each candidate name.', 'You drive: narrow to **one question at a time** for the crux, widen to batches after. Log side discoveries as backlog issues.', 'Keep grilling, spec and tickets in **one chat**. **Don\'t /clear or /compact** until after /to-tickets.'],
+          what: 'An interview in rounds until you and the agent **share a language**. Those terms become your tables and modules.',
+          pts: ['Explain **the why** (the problem, the friction), not the what.', 'Answer each numbered question. **"Yes"** accepts the recommended answer.', 'Settled terms go into **GLOSSARY.md**. Watch for clashes, like "component" vs React.', 'Write an **ADR** only if a decision is hard to reverse, surprising and a real trade-off: all three.', 'Stuck on a name? Ask for a **scenario test**.', 'For the crux, ask for **one question at a time**. Widen again after.', 'Keep grilling, spec and tickets in **one chat**. No /clear or /compact until after /to-tickets.'],
           say: 'For now, let\'s just focus on this question. Ask me one question at a time until I say otherwise.',
           who: 'You. The agent can\'t start it on its own.',
-          done: 'No open questions remain and you confirm you share an understanding. Then ask: is the build one slice?'
+          done: 'No open questions remain. Then ask: is the build one slice?'
         },
         {
           id: 'wayfinder', c: 'var(--lane)', n: 'Wayfinder', cmd: '/wayfinder', skill: 'Large lane',
-          what: 'Planning for an effort **too big to plan in one session**. It charts a map issue on your tracker made of decision tickets, then resolves them one per session.',
-          pts: ['The slowest, most demanding flow. **Never use it for a well-scoped feature**.', 'First session: name the **destination** (usually a spec) and chart the map. It **builds nothing**.', 'Ticket types: grilling and prototype (with you), research (agent alone), task (manual work that unblocks a decision).', 'Each ticket is sized to one fresh session of **about 100k tokens**. Each later session: run /wayfinder with the map and resolve one ticket. Research tickets can run in parallel.', 'If charting shows the way is already clear, you don\'t need a map: **go back to the medium lane**.', 'When no tickets remain, continue with /to-spec and /to-tickets.'],
+          what: 'Planning for an effort **too big for one chat**: a map of decision tickets, resolved one per session.',
+          pts: ['Slow and demanding: **never for a well-scoped feature**.', 'Session 1 names the destination and charts the map. It **builds nothing**.', 'Tickets: grilling and prototypes with you, research by the agent, manual tasks.', 'Each later session resolves **one ticket** (about 100k tokens).', 'Way already clear? **Go back to the medium lane**.', 'No tickets left? Continue with /to-spec and /to-tickets.'],
           say: '/wayfinder Here is the loose idea and why we need it.',
           who: 'You, up front or when grilling shows the work is bigger.',
-          done: 'The map has no open tickets: nothing is left to decide before building.'
+          done: 'The map has no open tickets.'
         },
         {
-          id: 'proto', c: 'var(--route)', n: 'Prototype', cmd: '/prototype', skill: 'Optional, during grilling or Wayfinder',
-          what: '**Throwaway code that answers one question**. Use it only when the question is how something should look or behave.',
-          pts: ['UI question: several very different variants on one route, switchable from a bar at the bottom.', 'Logic question: a single HTML file that walks a state model through tricky cases.', '**A variant you hate** tells the agent as much as one you love. Pick one, then iterate on it.', 'Afterwards the prototype lives on a **throwaway branch**, linked from the issue. Main keeps only the decision.', 'The agent can run it in a background sub-agent while you keep grilling.'],
+          id: 'proto', c: 'var(--route)', n: 'Prototype', cmd: '/prototype', skill: 'Optional, during grilling',
+          what: '**Throwaway code that answers one question**: how should it look or behave?',
+          pts: ['UI: several very different variants, switchable on one page.', 'Logic: one HTML file that walks a state model through tricky cases.', '**A variant you hate** teaches as much as one you love.', 'It lives on a **throwaway branch**. Only the decision goes to main.'],
           say: 'Prototype a few different editing surfaces so I can feel the trade-offs.',
-          who: 'You or the agent. The agent may suggest it mid-grill.',
+          who: 'You or the agent. It can run in the background while you keep grilling.',
           done: 'You can point at the screen and say: build exactly this.'
         },
         {
-          id: 'spec', c: 'var(--route)', n: 'Spec + tickets', cmd: '/to-spec, then /to-tickets', skill: 'Only when the build is more than one slice',
-          what: 'The spec is the **destination**; tickets are the **session-sized legs**. Together they leave the implementer almost no decisions.',
-          pts: ['/to-spec doesn\'t interview you; it writes up what you discussed. It does ask you to **confirm where the feature will be tested**.', 'The spec holds the problem, user stories, implementation and testing decisions, and what is out of scope. It goes on your tracker labelled ready-for-agent.', '/to-tickets cuts **thin vertical slices** (each through every layer, each fitting one fresh chat inside the smart zone), prefactoring first, each listing what blocks it.', 'It shows you the breakdown and **waits for your approval** before publishing.'],
+          id: 'spec', c: 'var(--route)', n: 'Spec + tickets', cmd: '/to-spec, then /to-tickets', skill: 'When the build is more than one slice',
+          what: 'The spec is the **destination**. Tickets are the **session-sized legs**.',
+          pts: ['/to-spec writes up what you discussed. It asks you to **confirm where to test**.', 'The spec covers the problem, user stories, decisions and what\'s out of scope.', '/to-tickets cuts **thin vertical slices**, each fitting one fresh chat.', 'It **waits for your approval** before publishing.'],
           say: '/to-spec',
-          who: 'You invoke both, in the same chat as the grilling.',
-          done: 'The spec issue and its ticket sub-issues exist, and you approved the breakdown.'
+          who: 'You, both in the same chat as the grilling.',
+          done: 'The spec and its tickets exist, and you approved the breakdown.'
         },
         {
           id: 'impl', c: 'var(--muted)', n: 'Compact, then implement spec', cmd: '/compact, then /implement-spec', skill: 'Runs unattended',
-          what: 'The plan now lives in the spec and tickets, so you can **safely shrink the chat**. Then let it run unattended.',
-          pts: ['/compact (or /clear and point it at the spec issue): back to a small context, where the agent works best.', '/implement-spec builds on one integration branch: **a fresh sub-agent per ticket**, each in its own git worktree, test-first with /tdd, in parallel where the blocking allows.', 'When every ticket is done it **runs /code-review once** (your standards, plus "does it match the spec?") and fixes the findings.', 'In Copilot, **try it on a small spec first**. If tickets run one at a time instead of in parallel, use /implement per ticket instead.', '**Walk away**, but come back if: a second broad review starts after the fix round (tell it to check only the fixed findings, then stop), two tickets edit the same file or pick different names for one thing, or blocked tickets never start (tell it to track merged tickets itself).'],
+          what: 'The plan now lives in the spec, so you can **safely shrink the chat** and let it run.',
+          pts: ['Each ticket gets a **fresh sub-agent** and its own git worktree, in parallel where possible.', 'At the end it runs **/code-review once** and fixes the findings.', 'In Copilot, **try a small spec first**. No parallel tickets? Use /implement per ticket.', ['**Walk away**, but come back if:', ['a second broad review starts: tell it to check only the fixes', 'two tickets edit the same file or name one thing differently', 'blocked tickets never start: tell it to track merged tickets itself']]],
           say: '/implement-spec .scratch/my-feature/spec.md',
-          who: 'You compact and invoke it. It starts the sub-agents, /tdd and /code-review itself.',
+          who: 'You. It starts the sub-agents, /tdd and /code-review itself.',
           done: 'A PR with the code-review fixes applied.'
         },
         {
           id: 'review', c: 'var(--route)', n: 'Human review + QA', cmd: 'Plain prompt, no skill', skill: 'You lead',
           what: 'Review **the system that wrote the code**, not just the code. Then try the feature yourself.',
-          pts: ['For a big PR you want to read, ask for **stacked diffs**. There is no skill for this; it is a plain prompt.', 'A two-way door is easy to revert. A **one-way door is hard to undo**: migrations, external services, security. The terms come from the /pr skill.', 'Two-way doors first, one one-way door last. **Hide the feature behind a flag** and switch it on in the last PR.', '**Always read the one-way door yourself**. You don\'t have to read every line of the rest.', 'Comment, **with your reason**, on every pattern you dislike. /retro turns those into rules.', 'The agent\'s own tests and /code-review aren\'t independent checks. **CI passing** and your own test run in the app are. Do both before merging.'],
+          pts: ['No PR yet? Say **"open a PR"**. The agent writes it with /pr and labels it a one-way or two-way door.', 'Big PR? Ask for **stacked diffs**: two-way doors (easy to revert) first, the one-way door last, behind a flag.', '**Always read the one-way door yourself**. Skim the rest.', 'Comment **with your reason** on patterns you dislike. /retro turns them into rules.', '**CI and your own test run** are the independent checks, not the agent\'s tests.'],
           say: 'Break this into stacked diffs: reviewable two-way doors ending in one one-way door. Estimate lines per PR.',
-          who: 'You. Copilot\'s built-in /review is a different tool from /code-review.',
+          who: 'You. Copilot\'s built-in /review is a different tool.',
           done: 'You have tested it, read the one-way door, and merged.'
         },
         {
           id: 'retro', c: 'var(--route)', n: 'Retro', cmd: '/retro', skill: 'You lead',
-          what: 'Look back over the sessions and your review comments, then **improve the agent\'s environment** so the next run goes better.',
-          pts: ['Run it in the chat it is looking back on, **before you clear**. For older Copilot CLI sessions, point it at ~/.copilot/session-state/.', 'Ask it to pull in your **PR review comments** too (it uses the GitHub CLI, gh).', 'You get improvements ranked by severity: navigation, automated checks, coding standards, steering files, tool cost, missing information. **It only proposes**; nothing changes until you pick.', 'Mechanical rules (a banned API, a syntax pattern) become **lint rules or CI checks**. Judgement calls go in **CODING_STANDARDS.md**. Keep copilot-instructions.md short.', 'Drop any suggestion you **can\'t trace to a real moment** in the session. Raise the rest as issues: most go back through the small lane.'],
+          what: 'Look back at the sessions and your review comments, then **improve the agent\'s environment**.',
+          pts: ['Run it **after your PR review** and **before you clear** the chat.', 'It suggests fixes ranked by severity. **It only proposes**; nothing changes until you pick.', 'Mechanical rules become **lint or CI checks**. Judgement calls go in CODING_STANDARDS.md.', 'Drop anything you **can\'t trace to a real moment**. Turn the rest into issues.'],
           say: '/retro Look at all the agent sessions that ran for this and pull in my review comments.',
           who: 'You, after a build that was harder than it should have been.',
-          done: 'Every finding you kept is an issue, and the next run starts from a better baseline.'
+          done: 'Every finding you kept is an issue.'
         }
       ];
       const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -940,10 +952,10 @@
       host.innerHTML = cards.map(k => `<article class="card" id="${k.id}" style="--c:${k.c}">
 <div class="head"><span class="dot"></span><div><h3>${esc(k.n)}</h3><div class="skill">${esc(k.skill)}${k.cmd ? ` <code class="cmd">${esc(k.cmd)}</code>` : ''}</div></div></div>
 <p class="what">${fmt(k.what)}</p>
-<ul>${k.pts.map(p => `<li>${fmt(p)}</li>`).join('')}</ul>
+<ul>${k.pts.map(p => Array.isArray(p) ? `<li>${fmt(p[0])}<ul>${p[1].map(x => `<li>${fmt(x)}</li>`).join('')}</ul></li>` : `<li>${fmt(p)}</li>`).join('')}</ul>
 <div class="say"><q>${esc(k.say)}</q><button type="button" data-say="${esc(k.say)}">Copy</button></div>
-<p class="done"><b>Who starts it:</b> ${fmt(k.who)}</p>
-<p class="done"><b>Move on when:</b> ${fmt(k.done)}</p></article>`).join('');
+<div class="meta"><p class="done"><b>Who starts it</b> ${fmt(k.who)}</p>
+<p class="done"><b>Move on when</b> ${fmt(k.done)}</p></div></article>`).join('');
       document.addEventListener('click', e => {
         const b = e.target.closest('button[data-say]'); if (!b) return;
         const done = t => { b.textContent = t; setTimeout(() => b.textContent = 'Copy', 1600); };
@@ -1014,7 +1026,7 @@ ${stn('grill', X(1), yM, 'Grill with docs', '/grill-with-docs', 'above')}
 ${stn('proto', X(2), yM, 'Prototype', '/prototype, optional', 'above', true)}
 ${stn('spec', X(3.3), yM, 'Spec + tickets', '/to-spec + /to-tickets', 'above')}
 ${stn('impl', X(4.5), yM, 'Implement spec', '/implement-spec', 'below')}
-${stn('review', X(5.3), yM, 'Human review', 'test, read, merge', 'below')}
+${stn('review', X(5.3), yM, 'Human review', 'open PR, test, merge', 'below')}
 ${stn('retro', X(6), yM, 'Retro', '/retro', 'above')}`;
       };
       const topBtn = document.getElementById('top');
