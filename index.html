@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diff to Merge Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Overpass+Mono:wght@400;600&family=Overpass:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: a reference guide a developer keeps open beside the editor
+   IDEA a survey / transit map: every task takes a lane by diff size, then rides one route to merge
+   PICTURE full-width route map: three lanes leave "Size the diff", stations for each skill, zones for who leads, a loop back to start
+   COLOUR land #fbfbf2, sea #bfe3ee for the AFK stretch, route magenta, contour brown for small lane, ink for large lane
+   TYPE Overpass 800 + Overpass
+   LAYOUT title across the top, map full bleed beneath, station notes in a two-column legend grid; phone: map scrolls sideways, notes stack */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#14191c);--land:light-dark(#ffffff,#14191c);--sea:light-dark(#e8eeff,#16234a);
+--ink:light-dark(#1c2226,#eef1f2);--muted:light-dark(#59636a,#a8b1b6);--route:#ff6b00;--rtext:light-dark(#b84d00,#ff8a3d);
+--brown:light-dark(#2056fd,#6f93ff);--lane:light-dark(#1c2226,#c9d0d4);--card:light-dark(#ffffff,#1c2327);
+--line:light-dark(#e2e6e8,#2f383d);--chip:light-dark(#fff1e6,#3b2615)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Overpass,system-ui,sans-serif;overflow-x:clip}
+.band{padding-block:clamp(24px,3.5vw,52px);padding-inline:max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1{font-weight:800;font-size:clamp(32px,5vw,50px);line-height:1.05;letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance}
+.lede{margin:0;max-width:62ch;color:var(--muted);font-size:17px}
+.mapband{background:var(--land);border-block:1px solid var(--line)}
+.scroll{overflow-x:auto}
+#map{display:block;height:460px}
+#map .st{cursor:pointer}
+#map .st:hover circle,#map .st:focus circle{stroke:var(--route)}
+#map .st:focus{outline:none}
+#map text{font-family:Overpass,system-ui,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:4px}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0;padding-inline:max(5vw,16px)}
+h2{font-weight:800;font-size:28px;line-height:1.1;letter-spacing:-.02em;margin:0 0 6px}
+.sub{margin:0 0 22px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media(max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 22px;scroll-margin-top:16px}
+.card.flash,.row.flash{outline:3px solid var(--route);outline-offset:2px}
+.row{scroll-margin-top:16px}
+.head{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.dot{flex:none;width:22px;height:22px;border-radius:50%;border:4px solid var(--c);background:var(--card)}
+.card h3{font-weight:800;font-size:20px;line-height:1.15;margin:0}
+.skill{font-size:13px;color:var(--muted)}
+code{font-family:"Overpass Mono",ui-monospace,monospace;font-size:.92em;overflow-wrap:anywhere}
+.cmd{color:var(--ink);background:var(--chip);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.steps,.qs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.qs{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:1100px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:860px){.qs{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.steps{grid-template-columns:minmax(0,1fr)}}
+.flow{display:grid;gap:10px}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,230px) minmax(0,230px);gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px}
+.qn{width:36px;height:36px;border-radius:50%;background:var(--route);color:#1c2226;font-weight:800;display:grid;place-items:center;font-size:17px}
+.qq h3{font-size:19px;margin:0 0 4px;line-height:1.2}
+.qq p{margin:0;color:var(--muted);font-size:15px}
+.yes,.no{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;border-radius:8px;font-size:14px}
+.yes{background:var(--chip)}
+.no{border:1px dashed var(--line)}
+.yes b,.no b{font-size:13px}
+.yes span,.no span{color:var(--muted)}
+.note{margin:14px 0 0;font-size:15px;color:var(--muted);max-width:90ch}
+.note b{color:var(--ink)}
+@media(max-width:860px){.row{grid-template-columns:36px minmax(0,1fr);}.yes,.no{grid-column:2}}
+.q h3{margin-bottom:10px}
+.q p{margin:0 0 6px}
+details{margin-top:8px;font-size:14px}
+summary{cursor:pointer;font-weight:600;min-height:32px}
+summary:focus-visible{outline:3px solid var(--route);outline-offset:2px}
+.steps .card p{margin:0 0 10px}
+.n{font-weight:800;font-size:15px;color:var(--rtext)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted);font-weight:600}
+td:first-child{white-space:nowrap}
+@media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{border:0;padding:3px 0}.stack td::before{content:attr(data-l)": ";color:var(--muted);font-size:13px}}
+.what{margin:0 0 10px}
+.card ul{margin:0 0 14px;padding-left:20px}
+.card li{margin:4px 0}
+.card li b,.what b{font-weight:700}
+.say{display:flex;gap:10px;align-items:flex-start;background:var(--chip);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.say q{flex:1;font-size:15px}
+.say q::before,.say q::after{content:none}
+.say button{flex:none;font:600 13px Overpass,sans-serif;min-height:36px;min-width:64px;padding:0 12px;border-radius:6px;border:1px solid var(--route);background:transparent;color:var(--ink);cursor:pointer}
+.say button:focus-visible{outline:3px solid var(--route);outline-offset:2px}
+.done{font-size:14px;margin:0 0 4px;color:var(--muted)}
+.done b{color:var(--ink)}
+.value{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.value div{padding:18px 20px;background:var(--land)}
+.value div.afk{background:var(--sea)}
+.value h3{font-size:17px;font-weight:800;margin:0 0 4px}
+.value p{margin:0;font-size:15px}
+@media(max-width:700px){.value{grid-template-columns:minmax(0,1fr)}}
+footer{font-size:13px;color:var(--muted)}
+footer a{color:inherit}
+#top{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));width:48px;height:48px;border-radius:50%;border:0;background:var(--route);color:#1c2226;box-shadow:0 2px 8px rgb(0 0 0/.18);cursor:pointer;display:grid;place-items:center;opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .2s,transform .2s;z-index:10}
+#top.show{opacity:1;transform:none;pointer-events:auto}
+#top:hover{background:#ff8125}
+#top:focus-visible{outline:3px solid var(--brown);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){#top{transition:none}}
+</style>
+</head>
+<body>
+<header class="band"><div class="wrap">
+<h1>From idea to merge: which skill, when</h1>
+<p class="lede">Our workflow for building with GitHub Copilot (CLI and VS Code chat). Answer three questions to pick a lane, then follow it. You lead at both ends; the agent runs the middle.</p>
+</div></header>
+
+<section class="mapband" aria-label="Workflow route map">
+<div class="scroll"><svg id="map" role="img" aria-label="Route map: small changes go to /implement then review. Medium changes go through /grill-with-docs and an optional prototype; if the build fits one session they go to /implement, otherwise to spec and tickets. Large efforts go through /wayfinder and join at spec and tickets. Then compact, /implement-spec, human review and /retro, which loops back to the start."></svg></div>
+</section>
+<p class="hint">Click a station to jump to its notes. On a phone, scroll the map sideways.</p>
+
+<section class="band" style="padding-bottom:0" aria-labelledby="q-h"><div class="wrap">
+<h2 id="q-h">Which lane? Three questions</h2>
+<p class="sub">Ask them in order. Each one has a sign you can check, so nobody has to guess token counts up front.</p>
+<div class="flow">
+<div class="row"><div class="qn">1</div><div class="qq"><h3>Is it obvious and only a few files?</h3><p>You could describe the fix in <b>one sentence</b> and you know where it goes.</p></div>
+<div class="yes"><b>Yes</b><code class="cmd">/implement #123</code></div><div class="no"><b>No</b><span>Question 2</span></div></div>
+<div class="row"><div class="qn">2</div><div class="qq"><h3>Can the plan be settled in one chat?</h3><p>Start grilling. If <b>every round opens new areas</b> and you are nowhere near done, it can't.</p></div>
+<div class="yes"><b>Yes</b><code class="cmd">/grill-with-docs</code><span>then question 3</span></div><div class="no"><b>No</b><code class="cmd">/wayfinder</code><span>then /to-spec</span></div></div>
+<div class="row" id="q3"><div class="qn">3</div><div class="qq"><h3>After grilling: is the build one slice?</h3><p>It's <b>one small PR</b>, nothing needs doing in a set order, and <code>/context</code> still shows <b>plenty of room</b>.</p></div>
+<div class="yes"><b>Yes</b><code class="cmd">/implement</code><span>in the same chat</span></div><div class="no"><b>No</b><code class="cmd">/to-spec</code><span>then /to-tickets, /compact, /implement-spec</span></div></div>
+</div>
+<p class="note"><b>Why one chat matters:</b> models do their best work in the "smart zone": about 150k tokens for the whole chat (every message, file read and test run). Check it with <code>/context</code> in Copilot CLI or the context indicator in VS Code chat. If you can't tell, <b>take the longer route</b>: it costs some ceremony but never runs out of room.</p>
+</div></section>
+
+<section class="band" style="padding-bottom:0" aria-labelledby="setup-h"><div class="wrap">
+<h2 id="setup-h">Before the first task: set up once</h2>
+<div class="steps">
+<article class="card"><div class="n">Step 1</div><h3>Install the skills</h3><p>Copilot CLI: add the skills marketplace, then install the plugin.</p>
+<div class="say"><q><code>copilot plugin marketplace add mattpocock/skills<br>copilot plugin install mattpocock-skills@mattpocock</code></q><button type="button" data-say="copilot plugin marketplace add mattpocock/skills&#10;copilot plugin install mattpocock-skills@mattpocock">Copy</button></div>
+<p>VS Code: run <b>Chat: Install Plugin From Source</b> and enter <code>https://github.com/mattpocock/skills</code>. It updates daily.</p>
+<details><summary>Turn on auto-update for the CLI</summary><p>Add this once to <code>~/.copilot/settings.json</code>:</p><div class="say"><q><code style="white-space:pre-wrap">{
+  &quot;extraKnownMarketplaces&quot;: {
+    &quot;mattpocock&quot;: { &quot;source&quot;: { &quot;source&quot;: &quot;github&quot;, &quot;repo&quot;: &quot;mattpocock/skills&quot; }, &quot;autoUpdate&quot;: true }
+  }
+}</code></q><button type="button" data-say="{&#10;  &quot;extraKnownMarketplaces&quot;: {&#10;    &quot;mattpocock&quot;: { &quot;source&quot;: { &quot;source&quot;: &quot;github&quot;, &quot;repo&quot;: &quot;mattpocock/skills&quot; }, &quot;autoUpdate&quot;: true }&#10;  }&#10;}">Copy</button></div></details></article>
+<article class="card"><div class="n">Step 2</div><h3>Check they loaded</h3><p>In VS Code chat, type <code>/skills</code> to open the skills list. In Copilot CLI, run <code>/skills list</code>. You should see <b>grill-with-docs, to-spec, implement-spec and retro</b>. If the install is blocked, check your organisation's Copilot policies with your admin.</p></article>
+<article class="card"><div class="n">Step 3</div><h3>Run setup once per repo</h3><p><b>Not optional.</b> /to-spec, /to-tickets, /wayfinder, /implement-spec and /code-review (which /implement also runs) all stop and ask for it. Only grilling works without it.</p>
+<p>It asks <b>where issues live</b>, which triage labels to use, and where GLOSSARY.md and docs/adr/ go. If it asks which instructions file to create, pick <b>AGENTS.md</b>: Copilot reads it.</p>
+<p><b>No GitHub Issues needed:</b> pick <b>local markdown</b> and specs and tickets become plain files in a <code>.scratch/</code> folder in the repo. Nothing is created in GitHub or Azure DevOps, and the whole workflow still works.</p>
+<p><b>Commit the files it writes</b> (docs/agents/ and the AGENTS.md block): then teammates don't run it again. Only if you pick GitHub Issues do you need the <b>GitHub CLI (<code>gh</code>) installed and signed in</b>.</p>
+<div class="say"><q><code>/setup-matt-pocock-skills</code></q><button type="button" data-say="/setup-matt-pocock-skills">Copy</button></div></article>
+<article class="card"><div class="n">Step 4</div><h3>Write down your standards</h3><p>Add a <b>CODING_STANDARDS.md</b> (or CONTRIBUTING.md). /code-review <b>checks every diff</b> against it, and /retro proposes additions. GLOSSARY.md and ADRs are created as you grill, so you <b>don't need them up front</b>.</p></article>
+</div></div></section>
+
+<main class="band"><div class="wrap">
+<h2>Station notes</h2>
+<p class="sub">What each stop is for, the prompt to use, and how you know you can move on. Always start your message with the slash command.</p>
+<div class="grid" id="cards"></div>
+</div></main>
+
+<section class="band" style="padding-top:0" aria-labelledby="cmd-h"><div class="wrap">
+<h2 id="cmd-h">Commands at a glance</h2>
+<p class="sub">"You" means the skill is user-invoked only: Copilot can't start it on its own.</p>
+<div class="scroll"><table class="stack"><thead><tr><th>Command</th><th>Use it when</th><th>Started by</th></tr></thead><tbody>
+<tr><td><code>/setup-matt-pocock-skills</code></td><td>Once per repo, before anything else. Commit what it writes</td><td>You</td></tr>
+<tr><td><code>/implement</code></td><td>An obvious change, a one-slice build after grilling, or one ticket at a time</td><td>You</td></tr>
+<tr><td><code>/grill-with-docs</code></td><td>Anything that needs a plan, and your default when unsure</td><td>You</td></tr>
+<tr><td><code>/wayfinder</code></td><td>An effort too big to plan in one chat</td><td>You</td></tr>
+<tr><td><code>/prototype</code></td><td>Optional: the question is how it should look or behave</td><td>You or the agent</td></tr>
+<tr><td><code>/to-spec</code></td><td>The build is more than one slice: write the destination</td><td>You</td></tr>
+<tr><td><code>/to-tickets</code></td><td>Right after /to-spec: slice it into session-sized tickets</td><td>You</td></tr>
+<tr><td><code>/compact</code>, <code>/clear</code></td><td>Built into Copilot. Compact before /implement-spec; clear between unrelated tasks</td><td>You</td></tr>
+<tr><td><code>/implement-spec</code></td><td>Build a whole spec and its tickets unattended</td><td>You</td></tr>
+<tr><td><code>/tdd</code></td><td>Building test-first at agreed test seams</td><td>The implement skills</td></tr>
+<tr><td><code>/code-review</code></td><td>Checking a diff against your standards and the spec (not Copilot's own /review)</td><td>The implement skills, or you</td></tr>
+<tr><td><code>/pr</code></td><td>Writing a PR body, including its one-way or two-way door</td><td>The agent</td></tr>
+<tr><td><code>/retro</code></td><td>After a build that was harder than it should have been</td><td>You</td></tr>
+</tbody></table></div>
+</div></section>
+
+<section class="band" style="padding-top:0"><div class="wrap">
+<h2>Where your time goes</h2>
+<p class="sub">The zones on the map: you spend your attention at the edges, not in the middle.</p>
+<div class="value">
+<div><h3>You lead: alignment</h3><p>Grilling, naming, ADRs, prototype choices. Every decision you make here is one the agent can't get wrong later.</p></div>
+<div class="afk"><h3>Agent runs mostly unattended</h3><p>A spec plus tickets, or a clear grilling chat, leaves almost no decisions. Start it and step away.</p></div>
+<div><h3>You lead: review + retro</h3><p>QA, taste, coding standards. Turn every review comment into a rule, so the next run is better.</p></div>
+</div>
+</div></section>
+
+<footer class="band" style="padding-top:0"><div class="wrap">
+Skills: <a href="https://github.com/mattpocock/skills">github.com/mattpocock/skills</a>. Check its README for changes now and then; the skills are updated often.</div></footer>
+
+<button type="button" id="top" aria-label="Back to top" title="Back to top"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4l-6 6M10 4l6 6M10 4v13" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<script>
+{
+const cards = [
+ {id:'size',c:'var(--ink)',n:'Size the change',cmd:'',skill:'Start here, every time',
+  what:'Three questions pick your route. Each has **a sign you can check**.',
+  pts:['Is it **obvious and only a few files**? Use /implement straight away.','Can the plan be **settled in one chat**? Yes: /grill-with-docs. No (a greenfield project, a huge foggy feature): /wayfinder.','After grilling: is the build **one slice** (one small PR, /context still shows room)? Yes: /implement in that chat. No: /to-spec, /to-tickets, then /implement-spec.','Unsure about the second question? **Start with /grill-with-docs** and bail out to /wayfinder if it grows.'],
+  say:'Here is the problem I have and why it hurts. I don\'t know yet how to build it.',
+  who:'You. It is a judgement call, not a skill.',
+  done:'You know which lane you are in.'},
+ {id:'implement',c:'var(--brown)',n:'Implement',cmd:'/implement',skill:'Small lane, and one-slice builds after grilling',
+  what:'Builds **one piece of work** in the current chat: test-first with /tdd, then a /code-review of its own diff.',
+  pts:['Small lane: run it in a **fresh chat** with the issue: /implement #123.','After grilling, if the build is one slice: run it in the **same chat**, so it builds on everything you just agreed.','You can also work a spec\'s tickets by hand: /implement **per ticket**, with /clear between tickets.','Then you **read the PR yourself**. Small diffs are quick to review.'],
+  say:'/implement #123',
+  who:'You. It calls /tdd and /code-review itself.',
+  done:'Code review is clean and you have read the PR.'},
+ {id:'grill',c:'var(--route)',n:'Grill with docs',cmd:'/grill-with-docs',skill:'Medium lane',
+  what:'An interview in rounds until you and the agent **share a language**. The terms you settle become **tables, modules and the data model**.',
+  pts:['Explain **the why** (the problem, the friction), not the what. It leaves room for better solutions.','Each round is a numbered list of questions, each with a recommended answer. Answer per number; **"yes" accepts the recommendation**.','Settled terms go into **GLOSSARY.md** straight away. Watch for clashes, such as "component" vs React components.','An ADR (in docs/adr/) is only for a decision that is hard to reverse, surprising without context and a real trade-off: **all three**. Read existing ADRs before changing mature code (Chesterton\'s fence).','Stuck on a name? Ask for a **scenario test**: real sentences scored against each candidate name.','You drive: narrow to **one question at a time** for the crux, widen to batches after. Log side discoveries as backlog issues.','Keep grilling, spec and tickets in **one chat**. **Don\'t /clear or /compact** until after /to-tickets.'],
+  say:'For now, let\'s just focus on this question. Ask me one question at a time until I say otherwise.',
+  who:'You. The agent can\'t start it on its own.',
+  done:'No open questions remain and you confirm you share an understanding. Then ask: is the build one slice?'},
+ {id:'wayfinder',c:'var(--lane)',n:'Wayfinder',cmd:'/wayfinder',skill:'Large lane',
+  what:'Planning for an effort **too big to plan in one session**. It charts a map issue on your tracker made of decision tickets, then resolves them one per session.',
+  pts:['The slowest, most demanding flow. **Never use it for a well-scoped feature**.','First session: name the **destination** (usually a spec) and chart the map. It **builds nothing**.','Ticket types: grilling and prototype (with you), research (agent alone), task (manual work that unblocks a decision).','Each ticket is sized to one fresh session of **about 100k tokens**. Each later session: run /wayfinder with the map and resolve one ticket. Research tickets can run in parallel.','If charting shows the way is already clear, you don\'t need a map: **go back to the medium lane**.','When no tickets remain, continue with /to-spec and /to-tickets.'],
+  say:'/wayfinder Here is the loose idea and why we need it.',
+  who:'You, up front or when grilling shows the work is bigger.',
+  done:'The map has no open tickets: nothing is left to decide before building.'},
+ {id:'proto',c:'var(--route)',n:'Prototype',cmd:'/prototype',skill:'Optional, during grilling or Wayfinder',
+  what:'**Throwaway code that answers one question**. Use it only when the question is how something should look or behave.',
+  pts:['UI question: several very different variants on one route, switchable from a bar at the bottom.','Logic question: a single HTML file that walks a state model through tricky cases.','**A variant you hate** tells the agent as much as one you love. Pick one, then iterate on it.','Afterwards the prototype lives on a **throwaway branch**, linked from the issue. Main keeps only the decision.','The agent can run it in a background sub-agent while you keep grilling.'],
+  say:'Prototype a few different editing surfaces so I can feel the trade-offs.',
+  who:'You or the agent. The agent may suggest it mid-grill.',
+  done:'You can point at the screen and say: build exactly this.'},
+ {id:'spec',c:'var(--route)',n:'Spec + tickets',cmd:'/to-spec, then /to-tickets',skill:'Only when the build is more than one slice',
+  what:'The spec is the **destination**; tickets are the **session-sized legs**. Together they leave the implementer almost no decisions.',
+  pts:['/to-spec doesn\'t interview you; it writes up what you discussed. It does ask you to **confirm where the feature will be tested**.','The spec holds the problem, user stories, implementation and testing decisions, and what is out of scope. It goes on your tracker labelled ready-for-agent.','/to-tickets cuts **thin vertical slices** (each through every layer, each fitting one fresh chat inside the smart zone), prefactoring first, each listing what blocks it.','It shows you the breakdown and **waits for your approval** before publishing.'],
+  say:'/to-spec',
+  who:'You invoke both, in the same chat as the grilling.',
+  done:'The spec issue and its ticket sub-issues exist, and you approved the breakdown.'},
+ {id:'impl',c:'var(--muted)',n:'Compact, then implement spec',cmd:'/compact, then /implement-spec',skill:'Runs unattended',
+  what:'The plan now lives in the spec and tickets, so you can **safely shrink the chat**. Then let it run unattended.',
+  pts:['/compact (or /clear and point it at the spec issue): back to a small context, where the agent works best.','/implement-spec builds on one integration branch: **a fresh sub-agent per ticket**, each in its own git worktree, test-first with /tdd, in parallel where the blocking allows.','When every ticket is done it **runs /code-review once** (your standards, plus "does it match the spec?") and fixes the findings.','In Copilot, **try it on a small spec first**. If tickets run one at a time instead of in parallel, use /implement per ticket instead.','**Walk away.** A feature with a handful of tickets can take around an hour.'],
+  say:'/implement-spec #456',
+  who:'You compact and invoke it. It starts the sub-agents, /tdd and /code-review itself.',
+  done:'A PR with the code-review fixes applied.'},
+ {id:'review',c:'var(--route)',n:'Human review + QA',cmd:'Plain prompt, no skill',skill:'You lead',
+  what:'Review **the system that wrote the code**, not just the code. Then try the feature yourself.',
+  pts:['For a big PR you want to read, ask for **stacked diffs**. There is no skill for this; it is a plain prompt.','A two-way door is easy to revert. A **one-way door is hard to undo**: migrations, external services, security. The terms come from the /pr skill.','Two-way doors first, one one-way door last. **Hide the feature behind a flag** and switch it on in the last PR.','**Always read the one-way door yourself**. You don\'t have to read every line of the rest.','Comment, **with your reason**, on every pattern you dislike. /retro turns those into rules.','Test it in the running app **before merging**.'],
+  say:'Break this into stacked diffs: reviewable two-way doors ending in one one-way door. Estimate lines per PR.',
+  who:'You. Copilot\'s built-in /review is a different tool from /code-review.',
+  done:'You have tested it, read the one-way door, and merged.'},
+ {id:'retro',c:'var(--route)',n:'Retro',cmd:'/retro',skill:'You lead',
+  what:'Look back over the sessions and your review comments, then **improve the agent\'s environment** so the next run goes better.',
+  pts:['Run it in the chat it is looking back on, **before you clear**. For older Copilot CLI sessions, point it at ~/.copilot/session-state/.','Ask it to pull in your **PR review comments** too (it uses the GitHub CLI, gh).','You get improvements ranked by severity: navigation, automated checks, coding standards, steering files, tool cost, missing information. **It only proposes**; nothing changes until you pick.','Mechanical rules (a banned API, a syntax pattern) become **lint rules or CI checks**. Judgement calls go in **CODING_STANDARDS.md**. Keep copilot-instructions.md short.','Drop any suggestion you **can\'t trace to a real moment** in the session. Raise the rest as issues: most go back through the small lane.'],
+  say:'/retro Look at all the agent sessions that ran for this and pull in my review comments.',
+  who:'You, after a build that was harder than it should have been.',
+  done:'Every finding you kept is an issue, and the next run starts from a better baseline.'}
+];
+const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const host = document.getElementById('cards');
+host.innerHTML = cards.map(k => `<article class="card" id="${k.id}" style="--c:${k.c}">
+<div class="head"><span class="dot"></span><div><h3>${esc(k.n)}</h3><div class="skill">${esc(k.skill)}${k.cmd?` <code class="cmd">${esc(k.cmd)}</code>`:''}</div></div></div>
+<p class="what">${fmt(k.what)}</p>
+<ul>${k.pts.map(p=>`<li>${fmt(p)}</li>`).join('')}</ul>
+<div class="say"><q>${esc(k.say)}</q><button type="button" data-say="${esc(k.say)}">Copy</button></div>
+<p class="done"><b>Who starts it:</b> ${fmt(k.who)}</p>
+<p class="done"><b>Move on when:</b> ${fmt(k.done)}</p></article>`).join('');
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-say]'); if (!b) return;
+  try { navigator.clipboard.writeText(b.dataset.say).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1400)},()=>{b.textContent='Select it';}); } catch(err) { b.textContent='Select it'; }
+});
+
+for (const c of document.querySelectorAll('.stack td')) { const i = c.cellIndex; c.dataset.l = c.closest('table').rows[0].cells[i].textContent; }
+const svg = document.getElementById('map');
+const box = svg.parentElement;
+const jump = id => { const el = document.getElementById(id); if (!el) return; el.scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1600); };
+svg.addEventListener('click', e => { const g = e.target.closest('.st'); if (g) jump(g.dataset.id); });
+svg.addEventListener('keydown', e => { const g = e.target.closest('.st'); if (g && (e.key==='Enter'||e.key===' ')) { e.preventDefault(); jump(g.dataset.id); } });
+
+const draw = () => {
+  const W = Math.max(box.clientWidth, 1160), H = 525;
+  svg.setAttribute('width', W); svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const L = 150, R = 90, sp = (W - L - R) / 6, X = i => L + i * sp;
+  const yS = 130, yM = 270, yL = 405, yLp = 485;
+  const stn = (id, x, y, name, sub, side, opt) => {
+    let tx = x, ta = 'middle', y1, y2;
+    if (side === 'left') { tx = x - 26; ta = 'end'; y1 = y - 4; y2 = y + 14; }
+    else if (side === 'above') { y1 = y - 48; y2 = y - 30; }
+    else { y1 = y + 34; y2 = y + 52; }
+    return `<g class="st" data-id="${id}" tabindex="0" role="link" aria-label="${name}: open notes">
+<circle cx="${x}" cy="${y}" r="${id==='size'?15:11}" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" ${opt?'stroke-dasharray="5 4"':''}/>
+<text x="${tx}" y="${y1}" text-anchor="${ta}" font-size="15" font-weight="800">${name}</text>
+<text x="${tx}" y="${y2}" text-anchor="${ta}" font-size="13" style="fill:var(--muted)">${sub}</text></g>`;
+  };
+  const pill = (x, y, t, c) => { const w = t.length * 8 + 22; return `<rect x="${x-w/2}" y="${y-12}" width="${w}" height="24" rx="12" fill="var(--bg)" stroke="${c}" stroke-width="2.5"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" font-weight="800" style="stroke:none">${t}</text>`; };
+  const z1 = X(3.62), z2 = X(4.92);
+  const zl = (x, a, b) => `<text x="${x+16}" y="34" font-size="13" font-weight="800" style="fill:var(--ink)">${a}</text><text x="${x+16}" y="52" font-size="13" style="fill:var(--muted)">${b}</text>`;
+  const J = X(2.6);
+  svg.innerHTML = `<defs><marker id="ahr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--route)"/></marker>
+<marker id="ahi" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--lane)"/></marker></defs>
+<rect x="0" y="0" width="${z1}" height="${H}" fill="var(--land)"/>
+<rect x="${z1}" y="0" width="${z2-z1}" height="${H}" fill="var(--sea)"/>
+<rect x="${z2}" y="0" width="${W-z2}" height="${H}" fill="var(--land)"/>
+<line x1="${z1}" y1="0" x2="${z1}" y2="${H}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/>
+<line x1="${z2}" y1="0" x2="${z2}" y2="${H}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="2 6" opacity=".6"/>
+${zl(0,'You lead','alignment')}${zl(z1,'Agent runs','mostly unattended')}${zl(z2,'You lead','review + retro')}
+<path d="M${X(6)} ${yM} V${yLp-20} Q${X(6)} ${yLp} ${X(6)-20} ${yLp} H${X(0)+20} Q${X(0)} ${yLp} ${X(0)} ${yLp-20} V${yM+24}" fill="none" stroke="var(--route)" stroke-width="3" stroke-dasharray="8 7" marker-end="url(#ahr)"/>
+<text x="${(X(0)+X(6))/2}" y="${yLp+26}" text-anchor="middle" font-size="13" style="fill:var(--muted)">QA and retro findings become issues: mostly small changes, back to the start</text>
+<path d="M${X(0)} ${yM} C${X(0)+40} ${yM} ${X(0)+30} ${yS} ${X(0)+80} ${yS} H${X(5.3)-80} C${X(5.3)-30} ${yS} ${X(5.3)} ${yM-40} ${X(5.3)} ${yM}" fill="none" stroke="var(--brown)" stroke-width="6" stroke-linecap="round"/>
+<path d="M${J} ${yM} C${J+50} ${yM} ${X(3)-50} ${yS} ${X(3)} ${yS}" fill="none" stroke="var(--brown)" stroke-width="6" stroke-linecap="round"/>
+<path d="M${X(0)} ${yM} C${X(0)+40} ${yM} ${X(0)+30} ${yL} ${X(0)+80} ${yL} H${X(3.3)-80} C${X(3.3)-30} ${yL} ${X(3.3)} ${yM+40} ${X(3.3)} ${yM}" fill="none" stroke="var(--lane)" stroke-width="6" stroke-linecap="round"/>
+<line x1="${X(0)}" y1="${yM}" x2="${X(6)}" y2="${yM}" stroke="var(--route)" stroke-width="8" stroke-linecap="round"/>
+<line x1="${X(1)}" y1="${yM+16}" x2="${X(1)}" y2="${yL-20}" stroke="var(--lane)" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#ahi)"/>
+<text x="${X(1)+10}" y="${yM+58}" font-size="13" style="fill:var(--muted)">bail out</text><text x="${X(1)+10}" y="${yM+75}" font-size="13" style="fill:var(--muted)">if it grows</text>
+<g class="st" data-id="q3" tabindex="0" role="link" aria-label="Is the build one slice? Open question 3">
+<rect x="${J-10}" y="${yM-10}" width="20" height="20" transform="rotate(45 ${J} ${yM})" fill="var(--route)" stroke="var(--bg)" stroke-width="3"/>
+<text x="${J}" y="${yM+36}" text-anchor="middle" font-size="13" font-weight="800">Build is</text>
+<text x="${J}" y="${yM+53}" text-anchor="middle" font-size="13" font-weight="800">one slice?</text></g>
+<text x="${X(2.78)}" y="${yS+34}" text-anchor="end" font-size="13" font-weight="800" style="fill:var(--brown)">yes: build it in this chat</text>
+<text x="${X(2.82)}" y="${yM-12}" text-anchor="middle" font-size="13" font-weight="800">no</text>
+<rect x="${X(3.9)-7}" y="${yM-7}" width="14" height="14" transform="rotate(45 ${X(3.9)} ${yM})" fill="var(--bg)" stroke="var(--ink)" stroke-width="3"/>
+<text x="${X(3.9)}" y="${yM+32}" text-anchor="middle" font-size="13" font-weight="800">compact</text>
+${pill(X(0)+74, yS, 'Small', 'var(--brown)')}${pill(X(0)+74, yM, 'Medium', 'var(--route)')}${pill(X(0)+74, yL, 'Large', 'var(--lane)')}
+${stn('size', X(0), yM, 'Size the change', 'three questions', 'left')}
+${stn('implement', X(4.2), yS, 'Implement', '/implement', 'above')}
+${stn('wayfinder', X(1), yL, 'Wayfinder', '/wayfinder', 'below')}
+${stn('grill', X(1), yM, 'Grill with docs', '/grill-with-docs', 'above')}
+${stn('proto', X(2), yM, 'Prototype', '/prototype, optional', 'above', true)}
+${stn('spec', X(3.3), yM, 'Spec + tickets', '/to-spec + /to-tickets', 'above')}
+${stn('impl', X(4.5), yM, 'Implement spec', '/implement-spec', 'below')}
+${stn('review', X(5.3), yM, 'Human review', 'test, read, merge', 'below')}
+${stn('retro', X(6), yM, 'Retro', '/retro', 'above')}`;
+};
+const topBtn = document.getElementById('top');
+const onScroll = () => topBtn.classList.toggle('show', window.scrollY > 600);
+window.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+topBtn.addEventListener('click', () => window.scrollTo({top:0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}));
+const ro = new ResizeObserver(draw);
+ro.observe(box);
+}
+</script>
+</body>
+</html>
