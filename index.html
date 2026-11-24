@@ -104,6 +104,40 @@
       outline: none
     }
 
+    #map .pulse {
+      fill: none;
+      stroke: var(--route);
+      stroke-width: 4;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pulse 1.8s ease-out infinite;
+      pointer-events: none
+    }
+
+    #map.seen .pulse {
+      display: none
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: scale(1);
+        opacity: .9
+      }
+
+      100% {
+        transform: scale(2.3);
+        opacity: 0
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      #map .pulse {
+        animation: none;
+        transform: scale(1.5);
+        opacity: .6
+      }
+    }
+
     #map text {
       font-family: Overpass, system-ui, sans-serif;
       fill: var(--ink);
@@ -573,8 +607,8 @@
   <header class="band">
     <div class="wrap">
       <h1>From idea to merge: which skill, when</h1>
-      <p class="lede">A visual guide to building features with agent skills in GitHub Copilot (CLI and VS Code chat). Answer three questions to
-        pick a lane, then follow it. You lead at both ends; the agent runs the middle.</p>
+      <p class="lede">A visual guide to building features with agent skills in GitHub Copilot (CLI and VS Code chat).
+        Answer three questions to pick a lane, then follow it. You lead at both ends; the agent runs the middle.</p>
     </div>
   </header>
 
@@ -915,7 +949,7 @@
       const svg = document.getElementById('map');
       const box = svg.parentElement;
       const jump = id => { const el = document.getElementById(id); if (!el) return; el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); };
-      svg.addEventListener('click', e => { const g = e.target.closest('.st'); if (g) jump(g.dataset.id); });
+      svg.addEventListener('click', e => { const g = e.target.closest('.st'); if (g) { svg.classList.add('seen'); jump(g.dataset.id); } });
       svg.addEventListener('keydown', e => { const g = e.target.closest('.st'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); jump(g.dataset.id); } });
 
       const draw = () => {
@@ -929,7 +963,7 @@
           else if (side === 'above') { y1 = y - 48; y2 = y - 30; }
           else { y1 = y + 34; y2 = y + 52; }
           return `<g class="st" data-id="${id}" tabindex="0" role="link" aria-label="${name}: open notes">
-<circle cx="${x}" cy="${y}" r="${id === 'size' ? 15 : 11}" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" ${opt ? 'stroke-dasharray="5 4"' : ''}/>
+${id === 'size' ? `<circle class="pulse" cx="${x}" cy="${y}" r="15"/>` : ''}<circle cx="${x}" cy="${y}" r="${id === 'size' ? 15 : 11}" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" ${opt ? 'stroke-dasharray="5 4"' : ''}/>
 <text x="${tx}" y="${y1}" text-anchor="${ta}" font-size="15" font-weight="800">${name}</text>
 <text x="${tx}" y="${y2}" text-anchor="${ta}" font-size="13" style="fill:var(--muted)">${sub}</text></g>`;
         };
