@@ -643,6 +643,27 @@
     .say .txt { flex: 1; display: grid; gap: 4px }
     .say .lbl { font-size: 12px; font-weight: 800; color: var(--rtext) }
     @media(max-width:860px) { .link { padding-left: 52px } }
+    .stage { font-size: 13px; font-weight: 800; color: var(--rtext); margin: 8px 0 -2px }
+    .stage:first-child { margin-top: 0 }
+    #cards { row-gap: 0 }
+    #cards .card { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 0; margin-bottom: 16px; align-content: start }
+    #cards .card > .go, #cards .card > ul { align-self: start }
+    #cards .meta { align-content: start }
+    /* readability pass */
+    .lede { max-width: 66ch }
+    .sub, .note { max-width: 72ch }
+    .hint { font-weight: 400 }
+    p, li, td, .done { text-wrap: pretty }
+    h2, h3 { text-wrap: balance }
+    #cards .what { font-size: 17px; line-height: 1.5 }
+    .meta .done { font-size: 15px; line-height: 1.45 }
+    .say .lbl { font-size: 13px }
+    .fine { max-width: 90ch; margin: 0 }
+    @media(max-width:600px) {
+      .stack td:first-child::before { content: none }
+      .stack td:first-child code { font-size: 15px; font-weight: 600; color: var(--ink) }
+      .stack td:first-child { padding-bottom: 6px }
+    }
   </style>
 </head>
 
@@ -669,8 +690,9 @@
   <section class="band" id="questions" style="padding-bottom:0" aria-labelledby="q-h">
     <div class="wrap">
       <h2 id="q-h">Which lane? Three questions</h2>
-      <p class="sub">Start here, before you click around the map. Ask the questions in order; each answer shows the route it puts you on.</p>
+      <p class="sub">Start here, before you click around the map. Two questions pick your starting lane; the third comes later, once grilling is done. Each answer shows the route it puts you on.</p>
       <div class="flow">
+        <div class="stage">Before you start</div>
         <div class="row">
           <div class="qn">1</div>
           <div class="qq">
@@ -684,16 +706,17 @@
         <div class="row">
           <div class="qn">2</div>
           <div class="qq">
-            <h3>Can the plan be settled in one chat?</h3>
-            <p>Start grilling. If <b>every round opens new areas</b> and you are nowhere near done, it can't.</p>
+            <h3>Can you explain the idea in a few minutes?</h3>
+            <p>You know <b>what you want and why</b>, even if you don't know how to build it yet. It's a feature, not a <b>whole new product or a months-long effort</b>.</p>
           </div>
-          <div class="yes"><b>Yes</b><code class="cmd">/grill-with-docs</code><div class="mini" style="--l:var(--route);--n:2" aria-hidden="true"><span>Grill</span><span>Prototype, optional</span></div><span class="next">Then go to question 3 ↓</span></div>
+          <div class="yes"><b>Yes</b><code class="cmd">/grill-with-docs</code><div class="mini" style="--l:var(--route);--n:2" aria-hidden="true"><span>Grill</span><span>Prototype, optional</span></div><span class="next">The agent helps you shape the plan. Then question 3 ↓</span></div>
           <div class="no"><b>No</b><code class="cmd">/wayfinder</code><div class="mini" style="--l:var(--lane);--n:4" aria-hidden="true"><span>Wayfinder</span><span>Spec + tickets</span><span>Implement spec</span><span>Review</span></div><span>You skip question 3</span></div>
         </div>
+        <div class="stage">Later: once grilling is done</div>
         <div class="row" id="q3">
           <div class="qn">3</div>
           <div class="qq">
-            <h3>After grilling: is the build one slice?</h3>
+            <h3>Is the build one slice?</h3>
             <p>It's <b>one small PR</b>, nothing needs doing in a set order, and <code>/context</code> still shows
               <b>plenty of room</b>.</p>
           </div>
@@ -804,7 +827,7 @@
             </tr>
             <tr>
               <td><code>/wayfinder</code></td>
-              <td>An effort too big to plan in one chat</td>
+              <td>A whole new product or a months-long effort: too big to explain in a few minutes</td>
               <td>You</td>
             </tr>
             <tr>
@@ -881,10 +904,9 @@
   </section>
 
   <footer class="band" style="padding-top:0">
-    <div class="wrap">
-      Built on <a href="https://github.com/mattpocock/skills">Matt Pocock's open-source skills</a>, adapted for GitHub
+    <div class="wrap"><p class="fine">Built on <a href="https://github.com/mattpocock/skills">Matt Pocock's open-source skills</a>, adapted for GitHub
       Copilot. Last checked: November 2026. Copilot and the skills change often, so check the skills README before
-      relying on the details.</div>
+      relying on the details.</p></div>
   </footer>
 
   <button type="button" id="top" aria-label="Back to top" title="Back to top"><svg width="20" height="20"
