@@ -285,7 +285,7 @@
 
     .row {
       display: grid;
-      grid-template-columns: 44px minmax(0, 1fr) minmax(0, 230px) minmax(0, 230px);
+      grid-template-columns: 44px minmax(0, 1fr) minmax(0, 260px) minmax(0, 260px);
       gap: 16px;
       align-items: center;
       background: var(--card);
@@ -623,6 +623,26 @@
     .meta { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px }
     .meta .done { margin: 0; display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 8px }
     @media(max-width:600px) { .meta .done { grid-template-columns: minmax(0, 1fr); gap: 0 } #cards .card { padding: 20px 18px } }
+    html { scroll-behavior: smooth }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior: auto } }
+    #setup, #questions { scroll-margin-top: 8px }
+    .cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px }
+    .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 999px; font-weight: 800; font-size: 15px; text-decoration: none }
+    .btn.primary { background: var(--route); color: #1c2226 }
+    .btn.primary:hover { background: #ff8125 }
+    .btn.ghost { border: 2px solid var(--route); color: var(--ink) }
+    .btn:focus-visible, .go:focus-visible, .hint a:focus-visible { outline: 3px solid var(--brown); outline-offset: 3px }
+    .hint a { color: var(--ink); font-weight: 800 }
+    .go { display: inline-block; margin: 0 0 16px; font-weight: 800; color: var(--rtext); text-decoration: none; border-bottom: 2px solid currentColor }
+    .link { font-size: 14px; font-weight: 700; color: var(--rtext); padding-left: 64px }
+    .next { color: var(--ink) !important; font-weight: 700 }
+    .mini { position: relative; display: flex; align-self: stretch; margin: 6px 0 2px }
+    .mini::before { content: ""; position: absolute; top: 5px; left: calc(100% / var(--n) / 2); right: calc(100% / var(--n) / 2); height: 4px; border-radius: 2px; background: var(--l) }
+    .mini span { position: relative; flex: 1; min-width: 0; padding-top: 18px; font-size: 12px; line-height: 1.2; text-align: center; color: var(--muted) !important }
+    .mini span::before { content: ""; position: absolute; top: 0; left: 50%; width: 14px; height: 14px; margin-left: -7px; box-sizing: border-box; border-radius: 50%; background: var(--card); border: 3px solid var(--l) }
+    .say .txt { flex: 1; display: grid; gap: 4px }
+    .say .lbl { font-size: 12px; font-weight: 800; color: var(--rtext) }
+    @media(max-width:860px) { .link { padding-left: 52px } }
   </style>
 </head>
 
@@ -632,6 +652,10 @@
       <h1>From idea to merge: which skill, when</h1>
       <p class="lede">A visual guide to building features with agent skills in GitHub Copilot (CLI and VS Code chat).
         Answer three questions to pick a lane, then follow it. You lead at both ends; the agent runs the middle.</p>
+      <div class="cta">
+        <a class="btn primary" href="#setup">New here? Set up first</a>
+        <a class="btn ghost" href="#questions">Pick your lane: 3 questions</a>
+      </div>
     </div>
   </header>
 
@@ -640,13 +664,12 @@
         aria-label="Route map: small changes go to /implement then review. Medium changes go through /grill-with-docs and an optional prototype; if the build fits one session they go to /implement, otherwise to spec and tickets. Large efforts go through /wayfinder and join at spec and tickets. Then compact, /implement-spec, human review and /retro, which loops back to the start."></svg>
     </div>
   </section>
-  <p class="hint">Click a station to jump to its notes. On a phone, scroll the map sideways.</p>
+  <p class="hint">Click a station to jump to its notes. New here? <a href="#setup">Do the one-time setup first</a>. On a phone, scroll the map sideways.</p>
 
-  <section class="band" style="padding-bottom:0" aria-labelledby="q-h">
+  <section class="band" id="questions" style="padding-bottom:0" aria-labelledby="q-h">
     <div class="wrap">
       <h2 id="q-h">Which lane? Three questions</h2>
-      <p class="sub">Ask them in order. Each one has a sign you can check, so nobody has to guess token counts up front.
-      </p>
+      <p class="sub">Start here, before you click around the map. Ask the questions in order; each answer shows the route it puts you on.</p>
       <div class="flow">
         <div class="row">
           <div class="qn">1</div>
@@ -655,8 +678,8 @@
             <p>You could describe the fix in <b>one sentence</b>, you know where it goes, and it doesn't touch <b>auth,
                 payments, data migrations or infra</b>.</p>
           </div>
-          <div class="yes"><b>Yes</b><code class="cmd">/implement</code><span>with the issue or ticket file</span></div>
-          <div class="no"><b>No</b><span>Question 2</span></div>
+          <div class="yes"><b>Yes</b><code class="cmd">/implement</code><span>with the issue or ticket file</span><div class="mini" style="--l:var(--brown);--n:3" aria-hidden="true"><span>Implement</span><span>Review</span><span>Retro</span></div></div>
+          <div class="no"><b>No</b><span class="next">Go to question 2 ↓</span></div>
         </div>
         <div class="row">
           <div class="qn">2</div>
@@ -664,8 +687,8 @@
             <h3>Can the plan be settled in one chat?</h3>
             <p>Start grilling. If <b>every round opens new areas</b> and you are nowhere near done, it can't.</p>
           </div>
-          <div class="yes"><b>Yes</b><code class="cmd">/grill-with-docs</code><span>then question 3</span></div>
-          <div class="no"><b>No</b><code class="cmd">/wayfinder</code><span>then /to-spec</span></div>
+          <div class="yes"><b>Yes</b><code class="cmd">/grill-with-docs</code><div class="mini" style="--l:var(--route);--n:2" aria-hidden="true"><span>Grill</span><span>Prototype, optional</span></div><span class="next">Then go to question 3 ↓</span></div>
+          <div class="no"><b>No</b><code class="cmd">/wayfinder</code><div class="mini" style="--l:var(--lane);--n:4" aria-hidden="true"><span>Wayfinder</span><span>Spec + tickets</span><span>Implement spec</span><span>Review</span></div><span>You skip question 3</span></div>
         </div>
         <div class="row" id="q3">
           <div class="qn">3</div>
@@ -674,9 +697,8 @@
             <p>It's <b>one small PR</b>, nothing needs doing in a set order, and <code>/context</code> still shows
               <b>plenty of room</b>.</p>
           </div>
-          <div class="yes"><b>Yes</b><code class="cmd">/implement</code><span>in the same chat</span></div>
-          <div class="no"><b>No</b><code class="cmd">/to-spec</code><span>then /to-tickets, /compact,
-              /implement-spec</span></div>
+          <div class="yes"><b>Yes</b><code class="cmd">/implement</code><span>in the same chat</span><div class="mini" style="--l:var(--brown);--n:3" aria-hidden="true"><span>Implement</span><span>Review</span><span>Retro</span></div></div>
+          <div class="no"><b>No</b><code class="cmd">/to-spec</code><div class="mini" style="--l:var(--route);--n:3" aria-hidden="true"><span>Spec + tickets</span><span>Implement spec</span><span>Review</span></div><span>with /compact in between</span></div>
         </div>
       </div>
       <p class="note"><b>Why one chat matters:</b> models do their best work in the "smart zone": about 150k tokens for
@@ -686,7 +708,7 @@
     </div>
   </section>
 
-  <section class="band" style="padding-bottom:0" aria-labelledby="setup-h">
+  <section class="band" id="setup" style="padding-bottom:0" aria-labelledby="setup-h">
     <div class="wrap">
       <h2 id="setup-h">Before the first task: set up once</h2>
       <div class="steps">
@@ -694,8 +716,8 @@
           <div class="n">Step 1</div>
           <h3>Install the skills</h3>
           <p>Copilot CLI: add the skills marketplace, then install the plugin.</p>
-          <div class="say">
-            <q><code>copilot plugin marketplace add mattpocock/skills<br>copilot plugin install mattpocock-skills@mattpocock</code></q><button
+          <div class="say"><div class="txt"><span class="lbl">Run in your terminal</span>
+            <q><code>copilot plugin marketplace add mattpocock/skills<br>copilot plugin install mattpocock-skills@mattpocock</code></q></div><button
               type="button"
               data-say="copilot plugin marketplace add mattpocock/skills&#10;copilot plugin install mattpocock-skills@mattpocock">Copy</button>
           </div>
@@ -726,7 +748,7 @@
           <p><b>Commit the files it writes</b> (docs/agents/ and the AGENTS.md block): then teammates don't run it
             again. Only if you pick GitHub Issues do you need the <b>GitHub CLI (<code>gh</code>) installed and signed
               in</b>.</p>
-          <div class="say"><q><code>/setup-matt-pocock-skills</code></q><button type="button"
+          <div class="say"><div class="txt"><span class="lbl">Type in Copilot chat</span><q><code>/setup-matt-pocock-skills</code></q></div><button type="button"
               data-say="/setup-matt-pocock-skills">Copy</button></div>
         </article>
         <article class="card">
@@ -875,8 +897,9 @@
       const cards = [
         {
           id: 'size', c: 'var(--ink)', n: 'Size the change', cmd: '', skill: 'Start here, every time',
-          what: 'Three questions pick your lane. Each has **a sign you can check**.',
-          pts: ['Obvious, a few files, **low-risk**? /implement.', 'Plan **fits in one chat**? /grill-with-docs. Otherwise /wayfinder.', 'After grilling, **one slice**? /implement in that chat. Otherwise the spec route.', 'Unsure? **Start grilling** and bail out if it grows.'],
+          what: 'Start with the **three questions** near the top of the page. They pick your lane, so don\'t skip them.',
+          go: 'questions',
+          pts: [],
           say: 'Here is the problem I have and why it hurts. I don\'t know yet how to build it.',
           who: 'You. It\'s a judgement call, not a skill.',
           done: 'You know which lane you are in.'
@@ -952,8 +975,8 @@
       host.innerHTML = cards.map(k => `<article class="card" id="${k.id}" style="--c:${k.c}">
 <div class="head"><span class="dot"></span><div><h3>${esc(k.n)}</h3><div class="skill">${esc(k.skill)}${k.cmd ? ` <code class="cmd">${esc(k.cmd)}</code>` : ''}</div></div></div>
 <p class="what">${fmt(k.what)}</p>
-<ul>${k.pts.map(p => Array.isArray(p) ? `<li>${fmt(p[0])}<ul>${p[1].map(x => `<li>${fmt(x)}</li>`).join('')}</ul></li>` : `<li>${fmt(p)}</li>`).join('')}</ul>
-<div class="say"><q>${esc(k.say)}</q><button type="button" data-say="${esc(k.say)}">Copy</button></div>
+${k.go ? `<a class="go" href="#${k.go}">Go to the three questions ↑</a>` : ''}${k.pts.length ? `<ul>` : ''}${k.pts.map(p => Array.isArray(p) ? `<li>${fmt(p[0])}<ul>${p[1].map(x => `<li>${fmt(x)}</li>`).join('')}</ul></li>` : `<li>${fmt(p)}</li>`).join('')}${k.pts.length ? `</ul>` : ''}
+<div class="say"><div class="txt"><span class="lbl">${k.lbl || 'Example prompt for Copilot chat'}</span><q>${esc(k.say)}</q></div><button type="button" data-say="${esc(k.say)}" aria-label="Copy prompt">Copy</button></div>
 <div class="meta"><p class="done"><b>Who starts it</b> ${fmt(k.who)}</p>
 <p class="done"><b>Move on when</b> ${fmt(k.done)}</p></div></article>`).join('');
       document.addEventListener('click', e => {
@@ -986,7 +1009,7 @@
           else if (side === 'above') { y1 = y - 48; y2 = y - 30; }
           else { y1 = y + 34; y2 = y + 52; }
           return `<g class="st" data-id="${id}" tabindex="0" role="link" aria-label="${name}: open notes">
-${id === 'size' ? `<circle class="pulse" cx="${x}" cy="${y}" r="15"/>` : ''}<circle cx="${x}" cy="${y}" r="${id === 'size' ? 15 : 11}" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" ${opt ? 'stroke-dasharray="5 4"' : ''}/>
+${id === 'questions' ? `<circle class="pulse" cx="${x}" cy="${y}" r="15"/>` : ''}<circle cx="${x}" cy="${y}" r="${id === 'questions' ? 15 : 11}" fill="var(--bg)" stroke="var(--ink)" stroke-width="4" ${opt ? 'stroke-dasharray="5 4"' : ''}/>
 <text x="${tx}" y="${y1}" text-anchor="${ta}" font-size="15" font-weight="800">${name}</text>
 <text x="${tx}" y="${y2}" text-anchor="${ta}" font-size="13" style="fill:var(--muted)">${sub}</text></g>`;
         };
@@ -994,6 +1017,14 @@ ${id === 'size' ? `<circle class="pulse" cx="${x}" cy="${y}" r="15"/>` : ''}<cir
         const z1 = X(3.62), z2 = X(4.92);
         const zl = (x, a, b) => `<text x="${x + 16}" y="34" font-size="13" font-weight="800" style="fill:var(--ink)">${a}</text><text x="${x + 16}" y="52" font-size="13" style="fill:var(--muted)">${b}</text>`;
         const J = X(2.6);
+        const bez = (p0, p1, p2, p3, t) => { const u = 1 - t; const pt = (a, b, c, d) => u*u*u*a + 3*u*u*t*b + 3*u*t*t*c + t*t*t*d; const dv = (a, b, c, d) => 3*u*u*(b - a) + 6*u*t*(c - b) + 3*t*t*(d - c); return [pt(p0[0], p1[0], p2[0], p3[0]), pt(p0[1], p1[1], p2[1], p3[1]), Math.atan2(dv(p0[1], p1[1], p2[1], p3[1]), dv(p0[0], p1[0], p2[0], p3[0])) * 180 / Math.PI]; };
+        const chev = ([x, y, a], c) => `<path d="M-6 -7.5L8 0L-6 7.5Z" transform="translate(${x} ${y}) rotate(${a})" fill="${c}" stroke="var(--bg)" stroke-width="1.5" stroke-linejoin="round"/>`;
+        const yesC = [[J, yM], [J + 50, yM], [X(3) - 50, yS], [X(3), yS]];
+        const smallC = [[X(5.3) - 80, yS], [X(5.3) - 30, yS], [X(5.3), yM - 40], [X(5.3), yM]];
+        const largeC = [[X(3.3) - 80, yL], [X(3.3) - 30, yL], [X(3.3), yM + 40], [X(3.3), yM]];
+        const noL = X(2.95) + 19, noR = X(3.3) - 11;
+        const B = 'var(--brown)', O = 'var(--route)', D = 'var(--lane)';
+        const arrows = [[bez(...yesC, 0.8), B], [[X(3) + 24, yS, 0], B], [[(noL + noR) / 2, yM, 0], O], [bez(...largeC, 0.6), D], [bez(...smallC, 0.6), B]].map(([p, c]) => chev(p, c)).join('');
         svg.innerHTML = `<defs><marker id="ahr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--route)"/></marker>
 <marker id="ahi" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--lane)"/></marker></defs>
 <rect x="0" y="0" width="${z1}" height="${H}" fill="var(--land)"/>
@@ -1014,12 +1045,12 @@ ${zl(0, 'You lead', 'alignment')}${zl(z1, 'Agent runs', 'mostly unattended')}${z
 <rect x="${J - 10}" y="${yM - 10}" width="20" height="20" transform="rotate(45 ${J} ${yM})" fill="var(--route)" stroke="var(--bg)" stroke-width="3"/>
 <text x="${J}" y="${yM + 36}" text-anchor="middle" font-size="13" font-weight="800">Build is</text>
 <text x="${J}" y="${yM + 53}" text-anchor="middle" font-size="13" font-weight="800">one slice?</text></g>
-<text x="${X(2.78)}" y="${yS + 34}" text-anchor="end" font-size="13" font-weight="800" style="fill:var(--brown)">yes: build it in this chat</text>
-<text x="${X(2.82)}" y="${yM - 12}" text-anchor="middle" font-size="13" font-weight="800">no</text>
+${pill((J + X(3)) / 2, (yM + yS) / 2, 'Yes', 'var(--brown)')}${pill(X(2.95), yM, 'No', 'var(--route)')}
 <rect x="${X(3.9) - 7}" y="${yM - 7}" width="14" height="14" transform="rotate(45 ${X(3.9)} ${yM})" fill="var(--bg)" stroke="var(--ink)" stroke-width="3"/>
 <text x="${X(3.9)}" y="${yM + 32}" text-anchor="middle" font-size="13" font-weight="800">compact</text>
+${arrows}
 ${pill(X(0) + 74, yS, 'Small', 'var(--brown)')}${pill(X(0) + 74, yM, 'Medium', 'var(--route)')}${pill(X(0) + 74, yL, 'Large', 'var(--lane)')}
-${stn('size', X(0), yM, 'Size the change', 'three questions', 'left')}
+${stn('questions', X(0), yM, 'Size the change', 'start: 3 questions', 'left')}
 ${stn('implement', X(4.2), yS, 'Implement', '/implement', 'above')}
 ${stn('wayfinder', X(1), yL, 'Wayfinder', '/wayfinder', 'below')}
 ${stn('grill', X(1), yM, 'Grill with docs', '/grill-with-docs', 'above')}
